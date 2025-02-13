@@ -57,14 +57,6 @@ streamlit run app.py
 
 │── 📄 requirements.txt  # Dependencies
 
-│── 📂 data              # Dataset folder (Ensure dataset is inside)
-
-│── 📂 models            # Trained model files
-
-│── 📂 static            # CSS/Images for UI
-
-│── 📂 templates         # HTML templates (if used)
-
 │── 📄 README.md         # Project Documentation
 
 
