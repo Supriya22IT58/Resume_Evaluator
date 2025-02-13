@@ -50,13 +50,21 @@ streamlit run app.py
 📂 Project Structure
 
 📁 Resume-Evaluator
+
 │── 📄 model.py          # Machine Learning Model for Resume Classification
+
 │── 📄 app.py            # Streamlit Web Application
+
 │── 📄 requirements.txt  # Dependencies
+
 │── 📂 data              # Dataset folder (Ensure dataset is inside)
+
 │── 📂 models            # Trained model files
+
 │── 📂 static            # CSS/Images for UI
+
 │── 📂 templates         # HTML templates (if used)
+
 │── 📄 README.md         # Project Documentation
 
 
