@@ -144,6 +144,4 @@ st.markdown("""
         <p style='font-size: 12px;'>✨ Making dreams come true, one resume at a time ✨</p>
     </div>
 """, unsafe_allow_html=True)
-
-
-Remove name,email and years of experience instead make the code to extract from the pdf and display it 
+ 
