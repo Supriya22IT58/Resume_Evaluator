@@ -5,7 +5,6 @@ import docx
 import io
 import time
 import random
-import re
 
 # Load Trained Model
 model = joblib.load("resume_evaluator_model.pkl")
@@ -15,7 +14,7 @@ def extract_text_from_pdf(file):
     text = ""
     with fitz.open(stream=file.read(), filetype="pdf") as doc:
         for page in doc:
-            text += page.get_text("text")
+            text += page.get_text()
     return text
 
 def extract_text_from_docx(file):
@@ -35,43 +34,46 @@ def extract_text_from_file(uploaded_file):
     else:
         return None
 
-# Function to Extract Name, Email, Experience, and Skills from Resume Text
-def extract_name(text):
-    lines = text.split("\n")
-    for line in lines:
-        words = line.strip().split()
-        if 1 < len(words) <= 4:  # Assuming name consists of 2 to 4 words
-            return line.strip()
-    return "Not Found"
-
-def extract_email(text):
-    email_pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-    match = re.search(email_pattern, text)
-    return match.group(0) if match else "Not Found"
-
-def extract_experience(text):
-    exp_pattern = r"(\d+)\s*(?:years?|yrs?|year|yr)"
-    matches = re.findall(exp_pattern, text, re.IGNORECASE)
-    if matches:
-        return f"{max(map(int, matches))} years"
-    return "Fresher"
-
-def extract_skills(text):
-    skills_keywords = ["Python", "Java", "C++", "SQL", "Machine Learning", "Deep Learning", "Cloud Computing", "React", "Node.js", "Data Science", "Cybersecurity"]
-    found_skills = [skill for skill in skills_keywords if skill.lower() in text.lower()]
-    return found_skills if found_skills else ["Not Found"]
-
-# Suggested Learning Courses
-learning_resources = {
-    "Python": "https://www.coursera.org/specializations/python",
-    "Machine Learning": "https://www.coursera.org/learn/machine-learning",
-    "Data Science": "https://www.udacity.com/course/data-scientist-nanodegree--nd025",
-    "React": "https://react.dev/",
-    "Cloud Computing": "https://aws.amazon.com/training/"
-}
-
-# Streamlit UI Setup
+# Streamlit UI Custom Styling
 st.set_page_config(page_title="Resume Evaluator", page_icon="📄", layout="centered")
+
+st.markdown("""
+    <style>
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .stApp {
+        background: linear-gradient(-45deg, #e6f3ff, #f0e6ff, #ffe6f0, #e6fff0);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+    }
+    .floating-title {
+        animation: float 3s ease-in-out infinite;
+        display: inline-block;
+    }
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+    .stButton > button {
+        background: linear-gradient(45deg, #6c63ff, #836fff);
+        color: white !important;
+        border-radius: 25px;
+        padding: 15px 30px;
+        font-size: 18px;
+        border: none;
+        transition: all 0.3s ease;
+        animation: glow 2s infinite;
+    }
+    .stButton > button:hover {
+        transform: scale(1.05);
+        background: linear-gradient(45deg, #836fff, #6c63ff);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 st.markdown("<h1 class='floating-title' style='text-align: center; color: #6c63ff;'>✨ Resume Evaluator ✨</h1>", unsafe_allow_html=True)
 
@@ -85,13 +87,17 @@ fun_messages = [
 ]
 st.markdown(f"<h3 style='text-align: center; color: black;'>{random.choice(fun_messages)}</h3>", unsafe_allow_html=True)
 
-# Resume Upload
+# Input Fields
+name = st.text_input("👤 Your Name", placeholder="e.g., Harry Potter")
+email = st.text_input("📧 Your Email", placeholder="e.g., wizard@hogwarts.com")
+role = st.selectbox("🎯 Role Applying For", ["Select Role", "Data Science", "Web Development", "Software Engineering", "AI/ML", "Cloud Computing", "Cybersecurity"])
+experience = st.selectbox("📅 Years of Experience", ["Select Experience"] + ["Fresher"] + [f"{i} years" for i in range(1, 26)])
 resume = st.file_uploader("📜 Upload Your Resume (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
 
 # Submit Button
 if st.button("🌟 Reveal Your Resume's Potential"):
-    if not resume:
-        st.error("❌ Please upload your resume before proceeding!")
+    if not name or not email or role == "Select Role" or experience == "Select Experience" or not resume:
+        st.error("❌ Please fill in all required fields before proceeding!")
     else:
         with st.spinner(random.choice(["Summoning career opportunities... 🌟", "Analyzing your professionalism... 🔮", "Unleashing your potential... 🚀"])):
             progress = st.progress(0)
@@ -100,32 +106,44 @@ if st.button("🌟 Reveal Your Resume's Potential"):
                 progress.progress(i + 1)
 
         resume_text = extract_text_from_file(resume)
-        
+
         if resume_text:
-            name = extract_name(resume_text)
-            email = extract_email(resume_text)
-            experience = extract_experience(resume_text)
-            skills = extract_skills(resume_text)
-            
-            st.subheader("Extracted Information")
-            st.write(f"**👤 Name:** {name}")
-            st.write(f"**📧 Email:** {email}")
-            st.write(f"**📅 Experience:** {experience}")
-            st.write(f"**💡 Extracted Skills:** {', '.join(skills)}")
-            
-            # Suggested Courses
-            st.subheader("📚 Suggested Learning Resources")
-            for skill in skills:
-                if skill in learning_resources:
-                    st.markdown(f"- [{skill} Course]({learning_resources[skill]})")
-            
             # Predict Category
             prediction = model.predict([resume_text])[0]
-            
+
+            # Skill Recommendations
+            skill_suggestions = {
+                "Data Science": ["Deep Learning", "SQL", "Big Data"],
+                "Web Development": ["React.js", "Node.js", "Database Management"],
+                "Software Engineering": ["System Design", "Data Structures", "Algorithms"],
+                "AI/ML": ["TensorFlow", "NLP", "Reinforcement Learning"],
+                "Cloud Computing": ["AWS", "Azure", "Kubernetes"],
+                "Cybersecurity": ["Network Security", "Ethical Hacking", "Cryptography"]
+            }
+
+            suggestions = skill_suggestions.get(prediction, [])
+            if experience == "Fresher":
+                suggestions.append("Internship Experience")
+            elif "years" in experience:
+                years = int(experience.split()[0])
+                if years > 5:
+                    suggestions.append("Advanced Certifications")
+                if years > 10:
+                    suggestions.append("Leadership & Mentoring")
+
             # Display Results
             st.success(f"✅ **Predicted Category:** {prediction}")
+            if suggestions:
+                st.info(f"🔹 **Suggested Skills to Improve:** {', '.join(suggestions)}")
         else:
             st.error("❌ Could not extract text from the uploaded file.")
 
 st.markdown("---")
-st.markdown("<div style='text-align: center; color: black;'><p style='font-size: 12px;'>✨ Making dreams come true, one resume at a time ✨</p></div>", unsafe_allow_html=True)
+st.markdown("""
+    <div style='text-align: center; color: black;'>
+        <p style='font-size: 12px;'>✨ Making dreams come true, one resume at a time ✨</p>
+    </div>
+""", unsafe_allow_html=True)
+
+
+Remove name,email and years of experience instead make the code to extract from the pdf and display it 
